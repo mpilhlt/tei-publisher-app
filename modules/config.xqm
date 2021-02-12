@@ -102,6 +102,36 @@ declare variable $config:pagination-depth := 10;
  :)
 declare variable $config:pagination-fill := 5;
 
+(: Default sorting order  :)
+declare variable $config:default-sort := 'title';
+
+(: Define mapping between search parameters and local facet and field names :)
+declare variable $config:search-facets := 
+    map {
+            "genre": "genre", 
+            "language": "language",
+            "author": "author"
+    };
+
+declare variable $config:search-fields := 
+    map {
+        "lang": "language", 
+        "author":"author", 
+        "date": "date",
+        "title": "title"
+    };
+
+(: Define scope of the range queries: the field to query and names of parameters for start and end range boundary :)
+declare variable $config:search-range := 
+    map {
+        "field": "date",
+        "inputs": map {
+            "from": "date-from", 
+            "to": "date-to"
+        }
+    };
+
+
 (:
  : Display configuration for facets to be shown in the sidebar. The facets themselves
  : are configured in the index configuration, collection.xconf.

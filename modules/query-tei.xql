@@ -24,37 +24,38 @@ declare namespace tei="http://www.tei-c.org/ns/1.0";
 import module namespace config="http://www.tei-c.org/tei-simple/config" at "config.xqm";
 import module namespace nav="http://www.tei-c.org/tei-simple/navigation/tei" at "navigation-tei.xql";
 import module namespace query="http://www.tei-c.org/tei-simple/query" at "query.xql";
+import module namespace console="http://exist-db.org/xquery/console";
 
 declare function teis:query-default($fields as xs:string+, $query as xs:string, $target-texts as xs:string*,
     $sortBy as xs:string*) {
-    if(string($query)) then
-        for $field in $fields
-        return
-            switch ($field)
-                case "head" return
-                    if ($target-texts) then
-                        for $text in $target-texts
-                        return
-                            $config:data-root ! doc(. || "/" || $text)//tei:head[ft:query(., $query, query:options($sortBy))]
-                    else
-                        collection($config:data-root)//tei:head[ft:query(., $query, query:options($sortBy))]
-                default return
-                    if ($target-texts) then
-                        for $text in $target-texts
-                        return
-                            $config:data-root ! doc(. || "/" || $text)//tei:div[ft:query(., $query, query:options($sortBy))] |
-                            $config:data-root ! doc(. || "/" || $text)//tei:text[ft:query(., $query, query:options($sortBy))]
-                    else
-                        collection($config:data-root)//tei:div[ft:query(., $query, query:options($sortBy))] |
-                        collection($config:data-root)//tei:text[ft:query(., $query, query:options($sortBy))]
-    else ()
+
+        let $request := map {
+            "parameters": map {
+                "sort": if ($sortBy) then $sortBy else $config:default-sort,
+                "targets": $target-texts,
+                "query": $query
+            }
+        }
+
+        let $matches := teis:query-document($request) 
+
+        for $match in $matches 
+            return
+            $match//tei:text
 };
 
 declare function teis:query-metadata($field as xs:string, $query as xs:string, $sort as xs:string) {
-    for $rootCol in $config:data-root
-    for $doc in collection($rootCol)//tei:text[ft:query(., $field || ":(" || $query || ")", query:options($sort))]
-    return
-        $doc/ancestor::tei:TEI
+    let $request := map {
+            "parameters": map {
+                "sort": if ($sort) then $sort else $config:default-sort,
+                $config:search-fields?($field): $query
+            }
+        }
+
+    let $matches := teis:query-document($request) 
+
+    return 
+        $matches
 };
 
 declare function teis:autocomplete($doc as xs:string?, $fields as xs:string+, $q as xs:string) {
@@ -193,4 +194,132 @@ declare function teis:get-current($config as map(*), $div as node()?) {
             $div
         else
             (nav:filler($config, $div), $div)[1]
+};
+
+declare function teis:prepare-fulltext-query($request) {
+    for $q in $request?parameters?query 
+            let $decoded := xmldb:decode($q)
+            return 
+                if ($decoded) then 
+                    $decoded
+                else
+                    ()
+};
+
+declare function teis:prepare-facet-query($request) {
+    map:merge((
+        for $dimension in map:keys($config:search-facets)
+            return
+                (: only add the dimensions with specified criteria :)
+                if ($request?parameters('facet-'||$dimension)) then
+                    map {
+                        (: map search parameters to local facet dimension names :)
+                        $config:search-facets($dimension): $request?parameters('facet-'||$dimension)
+                    }
+                else
+                    ()
+    ))
+};
+
+declare function teis:prepare-range-query($request) {
+    for $item in $config:search-range
+            let $field := $item?field
+
+            let $from:= $request?parameters($item?inputs?from)
+            let $to:= $request?parameters($item?inputs?to)
+
+            return 
+                if ($from or $to) then
+                    (: create range query :)
+                    if ($from and $to) then
+                        $field || ':[' || $from || ' TO ' || $to || ']'
+                    else if ($from) then
+                        $field || ':[' || $from || ' TO *]'
+                    else
+                        $field || ':[* TO ' || $to || ']'
+                else
+                    ()
+};
+
+declare function teis:prepare-field-query($request) {
+    for $f in map:keys($config:search-fields)
+        let $q := 
+            for $p in $request?parameters($f) 
+                let $query := xmldb:decode($p)
+                return if ($query) then $query else ()
+
+        return
+            if (count($q)) then 
+                $config:search-fields($f) || ':(' || 
+                string-join($q, teis:conjunction($request?parameters($f || '-operator'))) || ')' 
+            else 
+                ()
+};
+
+declare function teis:query-document($request as map(*)) {
+
+    let $facet-query := teis:prepare-facet-query($request)
+    let $text-query := teis:prepare-fulltext-query($request)
+    let $range-query := teis:prepare-range-query($request)
+    let $field-query := teis:prepare-field-query($request)
+
+    let $targets := $request?parameters?target-texts
+
+    let $fields := 
+        for $f in map:keys($config:search-fields)
+            return 
+                $config:search-fields($f)
+
+    let $constraints := 
+        (
+            if (count($text-query)) then $text-query else (),
+            if (count($range-query)) then $range-query else (),
+            $field-query
+        )
+
+    let $query := string-join($constraints, ' AND ')
+
+    (: Find matches across data-root collections :)
+    (: TODO: allow to query specific indexes, e.g. only for headings :)
+    let $hits :=
+        if ($targets) then
+            for $text in $targets 
+            return
+                $config:data-root ! doc(. || "/" || $text)//tei:text[ft:query(., $query, teis:query-options($fields, $facet-query))]
+        else
+            for $root in $config:data-root
+                let $c:= console:log($root)
+
+            return
+                collection($root)//tei:text[ft:query(., $query, teis:query-options($fields, $facet-query))]
+
+    (: Order by incoming sort parameter :)
+    let $sort := ($request?parameters?sort, $config:default-sort)[1]
+
+    let $sorted := 
+        for $i in $hits
+            let $f := ft:field($i, $sort)
+            order by $f[1]
+            return $i/ancestor::tei:TEI
+
+    return 
+        $sorted
+};
+
+declare function teis:conjunction($operator) {
+    switch ($operator) 
+        case "and"
+            return ' AND '
+        default
+            return ' OR '
+};
+
+declare function teis:query-options($sort, $facets) {
+     map:merge((
+        $query:QUERY_OPTIONS,
+        map {
+            "facets": $facets
+        } ,
+        map { "fields": $sort}
+    ))
 };
