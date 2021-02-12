@@ -30,11 +30,19 @@ declare function teis:query-default($fields as xs:string+, $query as xs:string, 
     $sortBy as xs:string*) {
 
         let $request := map {
-            "parameters": map {
-                "sort": if ($sortBy) then $sortBy else $config:default-sort,
-                "targets": $target-texts,
-                "query": $query
-            }
+            "parameters": map:merge((
+                map {
+                    "sort": if ($sortBy) then $sortBy else $config:default-sort,
+                    "targets": $target-texts,
+                    "query": $query
+                },
+                for $param in request:get-parameter-names()[starts-with(., 'facet-')]
+            return
+                if (request:get-parameter($param, ())) then 
+                    map {$param: request:get-parameter($param, ())}
+                else
+                    ()
+            ))
         }
 
         let $matches := teis:query-document($request) 
@@ -45,11 +53,20 @@ declare function teis:query-default($fields as xs:string+, $query as xs:string, 
 };
 
 declare function teis:query-metadata($field as xs:string, $query as xs:string, $sort as xs:string) {
-    let $request := map {
-            "parameters": map {
-                "sort": if ($sort) then $sort else $config:default-sort,
-                $config:search-fields?($field): $query
-            }
+    let $request := 
+        map {
+            "parameters": map:merge((
+                map {
+                    "sort": if ($sort) then $sort else $config:default-sort,
+                    $config:search-fields?($field): $query
+                },
+                for $param in request:get-parameter-names()[starts-with(., 'facet-')]
+            return
+                if (request:get-parameter($param, ())) then 
+                    map {$param: request:get-parameter($param, ())}
+                else
+                    ()
+            ))
         }
 
     let $matches := teis:query-document($request) 
@@ -207,6 +224,21 @@ declare function teis:prepare-fulltext-query($request) {
 };
 
 declare function teis:prepare-facet-query($request) {
+
+    (: let $f := map {
+            "facets":
+                map:merge((
+                    for $param in request:get-parameter-names()[starts-with(., 'facet-')]
+                    let $dimension := substring-after($param, 'facet-')
+                    return
+                        map {
+                            $dimension: request:get-parameter($param, ())
+                        }
+                ))
+        }
+
+    return $f?facets :)
+
     map:merge((
         for $dimension in map:keys($config:search-facets)
             return
