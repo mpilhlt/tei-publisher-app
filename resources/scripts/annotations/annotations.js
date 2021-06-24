@@ -5,22 +5,37 @@ function disableButtons(disable) {
 }
 
 window.addEventListener("WebComponentsReady", () => {
-    const form = document.getElementById("edit-form");
+    const form = document.querySelector('fx-instance');
     
     function showForm(type) {
 		form.style.display = "";
-		form.querySelectorAll(`.annotation-form:not(.${type})`).forEach((elem) => {
-			elem.style.display = "none";
-		});
-		form.querySelectorAll(`.annotation-form.${type}`).forEach((elem) => {
-			elem.style.display = "";
-		});
+
+		const parser = new DOMParser();
+    	const dom = parser.parseFromString(`<data><type>${type}</type></data>`, "application/xml");
+
+		form.instanceData = dom;
+		// form.querySelectorAll(`.annotation-form:not(.${type})`).forEach((elem) => {
+		// 	elem.style.display = "none";
+		// });
+		// form.querySelectorAll(`.annotation-form.${type}`).forEach((elem) => {
+		// 	elem.style.display = "";
+		// });
 	}
 
 	function hideForm() {
 		form.style.display = "none";
 	}
     
+	function setElem(name, value) {
+		let elem = form.instanceData.querySelector('name');
+		if (!elem) {
+			elem = document.createElement(name);
+			form.instanceData.documentElement.appendChild(elem);
+		}
+		elem.innerText = value;
+		console.log(form.instanceData);
+	}
+
 	hideForm();
 
 	let selection = null;
@@ -31,22 +46,23 @@ window.addEventListener("WebComponentsReady", () => {
 	let type = "";
 	let text = "";
 	document.getElementById("form-save").addEventListener("click", () => {
-		const data = form.serializeForm();
-		form.reset();
-		refInput.value = "";
-		hideForm();
-		if (activeSpan) {
-			window.pbEvents.emit("pb-edit-annotation", "transcription", {
-				target: activeSpan,
-				properties: data,
-			});
-			activeSpan = null;
-		} else {
-			window.pbEvents.emit("pb-add-annotation", "transcription", {
-				type,
-				properties: data,
-			});
-		}
+		console.log(form.instanceData);
+		// const data = form.serializeForm();
+		// form.reset();
+		// refInput.value = "";
+		// hideForm();
+		// if (activeSpan) {
+		// 	window.pbEvents.emit("pb-edit-annotation", "transcription", {
+		// 		target: activeSpan,
+		// 		properties: data,
+		// 	});
+		// 	activeSpan = null;
+		// } else {
+		// 	window.pbEvents.emit("pb-add-annotation", "transcription", {
+		// 		type,
+		// 		properties: data,
+		// 	});
+		// }
 	});
 	document.querySelector('#form-ref [slot="prefix"]').addEventListener("click", () => {
 		window.pbEvents.emit("pb-authority-lookup", "transcription", {
@@ -78,7 +94,8 @@ window.addEventListener("WebComponentsReady", () => {
 	});
 	window.pbEvents.subscribe("pb-authority-select", "transcription", (ev) => {
 		authorityDialog.close();
-		refInput.value = ev.detail.properties.ref;
+		setElem('key', ev.detail.properties.ref);
+		// refInput.value = ev.detail.properties.ref;
 	});
 	window.pbEvents.subscribe("pb-selection-changed", "transcription", (ev) => {
 		disableButtons(!ev.detail.hasContent);

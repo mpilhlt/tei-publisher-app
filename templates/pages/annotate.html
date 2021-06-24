@@ -17,6 +17,7 @@
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald&amp;display=swap"/>
         <link rel="stylesheet" href="resources/css/theme.css"/>
         <script type="module" src="pb-components-bundle.js" data-template="pages:load-components"></script>
+        <script type="module" src="fore.js" data-template="pages:load-components"></script>
         <script type="text/javascript" src="resources/scripts/annotations/annotations.js"></script>
         <style>
             main {
@@ -131,7 +132,7 @@
                                 <paper-icon-button class="annotation-action authority" data-type="term" icon="icons:bookmark" disabled="disabled"></paper-icon-button>
                                 <paper-icon-button class="annotation-action" data-type="note" icon="editor:insert-comment" disabled="disabled"></paper-icon-button>
                             </div>
-                            <iron-form id="edit-form">
+                            <!--iron-form id="edit-form">
                                 <form action="">
                                     <div class="annotation-form person organisation place term">
                                         <paper-input id="form-ref" name="ref" label="Reference">
@@ -144,7 +145,39 @@
                                     </div>
                                     <paper-icon-button id="form-save" icon="icons:save"></paper-icon-button>
                                 </form>
-                            </iron-form>
+                            </iron-form-->
+                            <fx-form id="edit-form">
+                                <fx-model id="model1">
+                                    <fx-instance>
+                                        <data>
+                                            <type>authority</type>
+                                            <key></key>
+                                            <note></note>
+                                        </data>
+                                    </fx-instance>
+                                </fx-model>
+                                <fx-output ref="type">
+                                    <fx-action event="value-changed">
+                                        <fx-message>Changed</fx-message>
+                                    </fx-action>
+                                </fx-output>
+                                <fx-switch>
+                                    <fx-case id="authority" name="authority">
+                                        <fx-control ref="key">
+                                            <paper-input id="form-ref" label="Reference" class="widget">
+                                                <paper-icon-button slot="prefix" icon="search"></paper-icon-button>
+                                            </paper-input>
+                                        </fx-control>
+                                        <div id="authority-info"></div>
+                                    </fx-case>
+                                    <fx-case id="note" name="note">
+                                        <fx-control ref="note">
+                                            <paper-textarea label="Note" height="10" rows="6"></paper-textarea>
+                                        </fx-control>
+                                    </fx-case>
+                                </fx-switch>
+                                <paper-icon-button id="form-save" icon="icons:save"></paper-icon-button>
+                            </fx-form>
                         </aside>
                         <div class="text">
                             <pb-view id="title-view1" src="document1" xpath="//teiHeader/fileDesc/titleStmt/title" view="single">
