@@ -53,7 +53,8 @@
 </head>
 
 <body>
-    <pb-page data-template="pages:pb-page" unresolved="unresolved">
+    <pb-page data-template="pages:pb-page" unresolved="unresolved" url-template="/{+path}{?root,odd}{#id}"
+        emit="transcription">
         <pb-document id="document1" data-template="pages:pb-document" />
         <app-drawer-layout force-narrow="force-narrow">
             <app-drawer data-template="lib:include" data-template-path="templates/drawer.html" />

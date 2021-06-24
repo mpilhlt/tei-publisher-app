@@ -12,7 +12,7 @@
 
     <title data-template="config:app-title" />
     <meta name="description" content="Cortez Letter (Madrid)" />
-    <meta name="pb-template" content="translation.html" />
+    <meta name="pb-template" content="cortez-with-translation.html" />
 
     <link rel="stylesheet" type="text/css" href="resources/fonts/font.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald&amp;display=swap" />
@@ -62,7 +62,8 @@
 </head>
 
 <body>
-    <pb-page data-template="pages:pb-page" unresolved="unresolved">
+    <pb-page data-template="pages:pb-page" unresolved="unresolved" url-template="/{+path}{?root,odd}{#id}"
+        emit="transcription">
         <pb-document id="document1" data-template="pages:pb-document" />
         <app-drawer-layout force-narrow="force-narrow">
             <app-drawer data-template="lib:include" data-template-path="templates/drawer.html" />
@@ -70,8 +71,7 @@
                 <app-header slot="header" reveals="reveals" fixed="fixed" effects="waterfall">
                     <app-toolbar data-template="lib:include" data-template-path="templates/menu.html" />
                     <app-toolbar data-template="lib:include" data-template-path="templates/toolbar.html">
-                        <pb-toggle-feature name="norm2" selector=".choice,.choice-alternate,br" emit="transcription" subscribe="transcription"
-                            data-target="toolbar-start">
+                        <pb-toggle-feature name="norm2" selector=".choice,.choice-alternate,br" default="off" emit="transcription" subscribe="transcription">
                             <pb-i18n key="document.normalized">Normalized View</pb-i18n>
                         </pb-toggle-feature>
                         <pb-toggle-feature name="highlight2" selector=".tei-foreign,pb-highlight,pb-popover"
@@ -83,7 +83,7 @@
                 </app-header>
 
                 <section class="breadcrumbs">
-                    <pb-view id="title-view1" src="document1" xpath="//teiHeader" view="single">
+                    <pb-view id="title-view1" src="document1" xpath="//teiHeader" view="single" disable-history="disable-history">
                         <pb-param name="mode" value="title" />
                     </pb-view>
                 </section>
