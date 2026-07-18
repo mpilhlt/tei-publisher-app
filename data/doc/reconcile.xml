@@ -159,13 +159,20 @@
             to what?) is inherently ambiguous.</para>
         <para>Matching and ranking is likewise pluggable: <code>$reconc-config:SCORE</code> points at
             any function <code>function($label as xs:string?, $query as xs:string?) as xs:double</code>,
-            defaulting to a simple string-similarity algorithm in <filename
+            defaulting to a string-similarity algorithm in <filename
                 >modules/reconcile-scoring.xql</filename> that you may reuse, wrap, or fully replace
-            — for example to call an external NER or embedding-based similarity service. Adding a
-            new type, removing one, or pointing an existing type at a completely different
-            collection requires no change anywhere else in the profile: the manifest, suggest
-            services, preview and data-extension endpoints all derive automatically from
-                <code>$reconc-config:TYPES</code>.</para>
+            — for example to call an external NER or embedding-based similarity service. The default
+            already tolerates typos (a Levenshtein-based fallback tier, applied word by word so one
+            mistyped word in a multi-word name doesn't sink the whole match), and a type may also
+            list every name <emphasis>variant</emphasis> worth matching against — not just its
+            preferred display name — via an optional <option>labels</option> field. For larger
+            collections, a type can additionally supply a <option>fulltext-search</option> function
+            that pre-filters candidates through a Lucene full-text index (with the same typo
+            tolerance) before the precise scoring step runs, rather than scoring every entity
+            individually. Adding a new type, removing one, or pointing an existing type at a
+            completely different collection requires no change anywhere else in the profile: the
+            manifest, suggest services, preview and data-extension endpoints all derive automatically
+            from <code>$reconc-config:TYPES</code>.</para>
         <para>Preview rendering (used by <code>/preview</code> and the <code>/entity/{id}</code>
             fallback) reuses the application's own TEI Processing Model transformation by default —
             the same mechanism the registers browse pages use — in the type's
