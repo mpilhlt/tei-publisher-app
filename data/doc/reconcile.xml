@@ -43,18 +43,23 @@
     <section xml:id="reconcile-adding">
         <title>Adding the profile to an application</title>
         <para>Add <code>reconcile</code> to your application's <code>extends</code> list in
-                <filename>config.json</filename>, alongside the <code>registers</code> profile it
-            matches against by default:</para>
+                <filename>config.json</filename> — it only depends on <code>base10</code>:</para>
         <programlisting language="json" xml:space="preserve"><![CDATA[
 {
-    "extends": ["base10", "registers", "reconcile"]
+    "extends": ["base10", "reconcile"]
 }
 ]]></programlisting>
         <para>The profile registers its Open API routes under the prefix <option>reconc</option>,
             mounted at <code>/api/reconcile</code> (see <link xlink:href="documentation.xml"
                 >Extending the API</link> for how this mechanism works in general). No further
             configuration is required to get started — the defaults described below cover the
-            typical case of reconciling against person, place, organization and work registers.</para>
+            typical case of reconciling against person, place, organization and work registers.
+            The <emphasis>registers</emphasis> profile (the one that adds browse pages like
+                <filename>/people</filename>) is entirely optional: if it happens to be part of
+            your application too, <code>GET /api/reconcile/entity/{id}</code> automatically
+            redirects there; if not, the same endpoint falls back to a built-in preview
+            transparently — see <link linkend="reconcile-config">Customizing what gets
+                reconciled</link> below.</para>
     </section>
     <section xml:id="reconcile-endpoints">
         <title>Endpoints</title>
@@ -93,7 +98,8 @@
                 <term>GET /api/reconcile/entity/{id}</term>
                 <listitem>
                     <para>Redirects to the entity's normal registers browse page when its type
-                        defines one, otherwise falls back to the same preview rendering.</para>
+                        defines one <emphasis>and</emphasis> the registers profile is actually
+                        installed, otherwise falls back to the same preview rendering.</para>
                 </listitem>
             </varlistentry>
             <varlistentry>
@@ -109,11 +115,13 @@
     </section>
     <section xml:id="reconcile-config">
         <title>Customizing what gets reconciled</title>
-        <para>By default, the profile reconciles against four types drawn from the <emphasis
-                >registers</emphasis> profile's local authority files — <emphasis>person</emphasis>,
+        <para>By default, the profile reconciles against four types drawn from the app's
+                <filename>registers</filename> collection — <emphasis>person</emphasis>,
                 <emphasis>place</emphasis>, <emphasis>organization</emphasis> and <emphasis>work</emphasis>
-            — the same registers the entity editors in the <emphasis>annotate</emphasis> profile
-            create and edit. This is entirely configurable: what counts as an entity of a given
+            — the same collection the entity editors in the <emphasis>annotate</emphasis> profile
+            create and edit (this is a base10-level convention; the separate <emphasis
+                >registers</emphasis> profile that adds browse pages over that same collection is
+            not required, see below). This is entirely configurable: what counts as an entity of a given
             type, how its label and properties are extracted, how candidates are scored and ranked,
             and how a preview is rendered are all defined in one plain, editable module,
                 <filename>modules/reconcile-config.xql</filename>, kept separate from the HTTP
@@ -164,6 +172,14 @@
                 <option>preview-mode</option> (default <code>register-overview</code>). Set a
             different existing ODD mode, or supply a <option>preview</option> function item for full
             control over rendering for that type.</para>
+        <para>The <option>view</option> field (e.g. <code>"view": "people"</code> on the shipped
+                <emphasis>person</emphasis> type) names a <emphasis>registers</emphasis> profile
+            browse page to redirect <code>/entity/{id}</code> to — but only if that profile is
+            actually installed in this app, checked at request time rather than assumed. Without
+            it (or with no <option>view</option> at all), the default preview rendering above is
+            used instead. For full control, set <option>view</option> to a function item instead
+            of a string — <code>function($id, $found, $request) as item()*</code>, building the
+            response yourself.</para>
         <para>The full reference, including a worked example of adding a fifth type, ships with the
             profile source at <filename>profiles/reconcile/doc/README.md</filename>.</para>
     </section>
