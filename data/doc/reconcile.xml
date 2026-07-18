@@ -200,6 +200,22 @@
         <para>The full reference, including a worked example of adding a fifth type, ships with the
             profile source at <filename>profiles/reconcile/doc/README.md</filename>.</para>
     </section>
+    <section xml:id="reconcile-production">
+        <title>Deploying to production</title>
+        <para>The profile ships with no request-rate limit and no authentication requirement by
+            default — matching how real-world reconciliation services (Wikidata's, GND's, etc.) are
+            conventionally deployed, and the spec itself defines no auth mechanism. Batch requests
+            and <code>/extend</code> calls are capped by a handful of overridable
+                <filename>reconcile-config.xql</filename> limits (rejecting anything oversized with
+            HTTP 400, since a batch response's positional shape can't tolerate silent truncation;
+            an over-large <code>limit</code> parameter is clamped instead of rejected). Rate limiting
+            is deliberately left to a reverse proxy in front of the app rather than hand-rolled in
+            XQuery, and restricting access to specific operations is a matter of adding an <code
+                >x-constraints</code> object to them in <filename>reconcile-api.tpl.json</filename> —
+            the <code>basicAuth</code>/<code>cookieAuth</code> schemes needed for that are already
+            declared. See <filename>profiles/reconcile/doc/README.md</filename>'s "Production
+            hardening" section for the exact config variables and worked examples.</para>
+    </section>
     <section xml:id="reconcile-client-side">
         <title>Querying a reconciliation service from TEI Publisher</title>
         <para>To reconcile entities <emphasis>against</emphasis> a service — this one, or any other
