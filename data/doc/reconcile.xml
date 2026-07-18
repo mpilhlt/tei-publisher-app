@@ -173,6 +173,16 @@
             completely different collection requires no change anywhere else in the profile: the
             manifest, suggest services, preview and data-extension endpoints all derive automatically
             from <code>$reconc-config:TYPES</code>.</para>
+        <para>A reconciliation query isn't limited to a plain name either: both spec versions let a
+            client add <emphasis>property</emphasis> conditions (e.g. "name is Goethe <emphasis
+                >and</emphasis> gender is male") to disambiguate same-named candidates, and 1.0-draft
+            also allows matching directly by a known entity <emphasis>id</emphasis> — a query may
+            even carry no name condition at all, reconciling purely by a known property value. No
+            extra configuration is needed for this: every property already defined for <code
+                >/extend</code> doubles as a match condition input. See <filename
+                >profiles/reconcile/doc/README.md</filename>'s "Matching on more than just a name"
+            section for the full <option>required</option>/<option>matchQualifier</option>/<option
+                >matchQuantifier</option> rules.</para>
         <para>Preview rendering (used by <code>/preview</code> and the <code>/entity/{id}</code>
             fallback) reuses the application's own TEI Processing Model transformation by default —
             the same mechanism the registers browse pages use — in the type's
